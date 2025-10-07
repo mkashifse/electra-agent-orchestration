@@ -1,0 +1,17 @@
+[project]
+name = "electra-voice-ai-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "beanie>=2.0.0",
+    "deepgram-sdk==4.*",
+    "fastapi[all,standard]>=0.118.0",
+    "google-cloud-speech>=2.33.0",
+    "logfire>=4.10.0",
+    "motor>=3.7.1",
+    "pip>=25.2",
+    "pydantic-ai>=1.0.13",
+    "pydantic-settings>=2.11.0",
+]
