@@ -1,1 +1,1 @@
-# Handlers module for FastAPI routers
+# Handlers module

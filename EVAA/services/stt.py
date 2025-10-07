@@ -13,8 +13,8 @@ from deepgram import (
     LiveOptions,
     LiveResultResponse,
 )
-from config.settings import settings
-from services.flux_stt import FluxSTT
+from ..config.settings import settings
+from .flux_stt import FluxSTT
 import datetime
 
 class AudioWriter:

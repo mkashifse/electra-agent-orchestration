@@ -3,7 +3,7 @@ WebSocket handler for real-time communication with the voice AI agent.
 """
 
 from fastapi import WebSocket, APIRouter
-from models.conversation_model import ConversationModel
+from ..models.conversation_model import ConversationModel
 import logfire
 
 router = APIRouter()

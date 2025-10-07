@@ -1,1 +1,1 @@
-# Agents module for Pydantic AI agents
+# Agents module

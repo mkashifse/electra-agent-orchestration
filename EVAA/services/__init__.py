@@ -1,1 +1,1 @@
-# Services module for core functionality
+# Services module

@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  evaa-backend:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_CONNECTION_STRING=mongodb://mongo:27017
+      - DB_NAME=evaa-dev
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - LOGFIRE_AUTH_TOKEN=${LOGFIRE_AUTH_TOKEN}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+      - ALLOWED_ORIGINS=*
+    depends_on:
+      - mongo
+    volumes:
+      - ./EVAA:/app/EVAA
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
