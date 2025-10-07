@@ -5,16 +5,16 @@ Main entry point for the voice AI agent backend.
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .config.settings import settings
+from config.settings import settings
 from datetime import datetime
 import logfire
 from contextlib import asynccontextmanager
-from .db.connection import init_db, close_db
+from db.connection import init_db, close_db
 
 # ================================================
 # Handlers
 # ================================================
-from .handlers.conversation_handler import router as conversation_router
+from handlers.conversation_handler import router as conversation_router
 
 
 # ================================================

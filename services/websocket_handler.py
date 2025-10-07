@@ -1,7 +1,7 @@
 import json
 from fastapi import WebSocket, WebSocketException
 import logfire
-from ..schemas.websocket_schema import Flag, webSocketAgentOutput, WebSocketInput, WebSocketOutput
+from schemas.websocket_schema import Flag, webSocketAgentOutput, WebSocketInput, WebSocketOutput
 
 
 class WebSocketHandler:

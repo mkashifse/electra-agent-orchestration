@@ -9,10 +9,10 @@ It follows the V2 architecture with dynamic schemas and async operations.
 # MongoDB Connection Setup
 # ================================================
 from motor.motor_asyncio import AsyncIOMotorClient
-from .models.memory import ChatMemory
-from .models.stage import Stage
+from db.models.memory import ChatMemory
+from db.models.stage import Stage
 from beanie import init_beanie
-from ..config.settings import settings
+from config.settings import settings
 import logfire
 
 # ================================================

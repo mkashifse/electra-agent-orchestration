@@ -121,6 +121,8 @@ node_modules/
 # Audio debug files
 *.wav
 *.raw
+*.mp3
+*.m4a
 audio_chunks_debug*
 
 # Frontend build files (if any)
@@ -134,8 +136,13 @@ docker-compose*
 
 # Heroku
 Procfile
-app.json
+heroku.yml
 
 # Temporary files
 tmp/
 temp/
+
+# Test files
+test_*
+*_test.py
+tests/

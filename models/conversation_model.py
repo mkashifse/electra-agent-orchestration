@@ -1,11 +1,11 @@
 from fastapi import WebSocket
-from ..db.models.memory import ChatMemory
-from ..db.models.stage import Stage
+from db.models.memory import ChatMemory
+from db.models.stage import Stage
 from typing import List, Dict, Any
-from ..services.websocket_handler import WebSocketHandler
-from ..schemas.websocket_schema import WebSocketInput, Flag, webSocketAgentOutput
-from ..agents.information_gatherer import agent_run
-from ..services.stt import STTUsingFlux
+from services.websocket_handler import WebSocketHandler
+from schemas.websocket_schema import WebSocketInput, Flag, webSocketAgentOutput
+from agents.information_gatherer import agent_run
+from services.stt import STTUsingFlux
 import asyncio
 import logfire
 

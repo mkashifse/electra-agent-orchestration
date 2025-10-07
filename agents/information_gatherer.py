@@ -8,7 +8,7 @@ from pydantic_ai.providers.groq import GroqProvider
 from pydantic_ai.agent import AgentRunResult
 from pydantic_ai.messages import ModelMessagesTypeAdapter
 from pydantic_core import to_jsonable_python
-from ..config.settings import settings
+from config.settings import settings
 from typing import Dict, Any, List
 from pydantic import BaseModel
 import logfire
