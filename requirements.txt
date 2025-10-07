@@ -17,6 +17,9 @@ pydantic-ai==0.0.14
 deepgram-sdk==3.2.7
 pydub==0.25.1
 
+# logging
+logfire
+
 # Configuration
 pydantic-settings==2.1.0
 
