@@ -8,7 +8,7 @@ from agents.information_gatherer import agent_run
 from services.stt import STTUsingFlux
 import asyncio
 import logfire
-
+from bson import ObjectId
 
 class ConversationModel:
     def __init__(self, websocket: WebSocket, session_id: str):
@@ -25,6 +25,7 @@ class ConversationModel:
         self.current_flag = Flag.LISTENING
         self.SST = STTUsingFlux(self.call_back)
         self.websocket_handler = WebSocketHandler(websocket)
+        self.is_new_project = False
 
 
     async def get_current_stage_data(self):
@@ -43,7 +44,6 @@ class ConversationModel:
         if memory and memory.current_stage_id:
             # Existing session with current stage
             # Convert string ID back to ObjectId for comparison
-            from bson import ObjectId
             try:
                 stage_id = ObjectId(memory.current_stage_id)
                 stage = next((s for s in self.stages if s.id == stage_id), None)
@@ -58,9 +58,11 @@ class ConversationModel:
                 self.current_stage_order = stage.order
             else:
                 # Stage not found, start with first stage
+                self.is_new_project = True
                 await self._set_first_stage()
         else:
             # New session or no current stage, start with first stage
+            self.is_new_project = True
             await self._set_first_stage()
 
     async def _set_first_stage(self):
@@ -183,13 +185,16 @@ class ConversationModel:
         else:
             await self.websocket_handler.send_error(response.get("error", "Unknown error"))
 
+        await self.update_db_memory(response.get("messages", []))
+
 
     async def run(self, session_id: str):
         await self.SST.start()
         await self.get_db_data(session_id)
         await self.websocket_handler.send_all_stages(self.stages)
 
-        await self.first_question_of_the_stage("Greet the user, introduce yourself, and initiate the conversation by asking them the next question in the current stage.")
+        if self.is_new_project:
+            await self.first_question_of_the_stage("Greet the user, introduce yourself, and initiate the conversation by asking them the next question in the current stage.")
 
         await self.websocket_handler.send_flag(self.current_flag)
         try:
