@@ -35,6 +35,13 @@ class ConversationModel:
             "stage_goal": self.current_stage_goal
         }
 
+    def parse_chat_history(self):
+        """Get clean chat history grouped by stage from database"""
+        if not self.memory or not self.memory.chat_history:
+            return {}
+        
+        return self.memory.chat_history
+
     async def get_db_data(self, session_id: str):
         memory = await ChatMemory.find_one(ChatMemory.session_id == session_id)
         stages = await Stage.find().sort("order").to_list()
@@ -85,6 +92,7 @@ class ConversationModel:
             self.memory = ChatMemory(
                 session_id=self.session_id,
                 messages=messages,
+                chat_history=[],
                 current_stage_id=str(self.current_stage_id) if self.current_stage_id else None
             )
             await self.memory.insert()
@@ -94,14 +102,47 @@ class ConversationModel:
             self.memory.current_stage_id = str(self.current_stage_id) if self.current_stage_id else None
             await self.memory.save()
 
+    async def add_to_chat_history(self, message_type: str, content: str):
+        """Add a message to the clean chat history grouped by stage"""
+        if not self.memory:
+            # Create new memory if it doesn't exist
+            self.memory = ChatMemory(
+                session_id=self.session_id,
+                messages=[],
+                chat_history={},
+                current_stage_id=str(self.current_stage_id) if self.current_stage_id else None
+            )
+            await self.memory.insert()
+        
+        # Get current stage name
+        stage_name = self.current_stage_name or "unknown"
+        
+        # Initialize stage array if it doesn't exist
+        if stage_name not in self.memory.chat_history:
+            self.memory.chat_history[stage_name] = []
+        
+        # Add message to the stage group (without stage field since it's the key)
+        self.memory.chat_history[stage_name].append({
+            "type": message_type,
+            "content": content
+        })
+        
+        # Update database
+        self.memory.current_stage_id = str(self.current_stage_id) if self.current_stage_id else None
+        await self.memory.save()
+
     async def call_back(self, message: str):
         await self.websocket_handler.send_user_transcription(message)
+        # Store user transcription in chat history
+        await self.add_to_chat_history("user", message)
         await self.process_user_input(message)
 
     async def process_message(self, message: WebSocketInput):
         if message.audio_chunk:
             asyncio.create_task(self.SST.send_audio_chunk(message.audio_chunk))
         elif message.text_prompt:
+            # Store user text input in chat history
+            await self.add_to_chat_history("user", message.text_prompt)
             asyncio.create_task(self.process_user_input(message.text_prompt))
 
     async def move_to_next_stage(self):
@@ -139,11 +180,16 @@ class ConversationModel:
         await self.websocket_handler.send_flag(self.current_flag)
         agent_response = await self.call_agent(user_input)
 
+        # Store agent response in chat history
+        agent_response_text = agent_response.get("response", "")
+        if agent_response_text:
+            await self.add_to_chat_history("agent", agent_response_text)
+
         if agent_response.get("next_stage", False):
 
 
             output = webSocketAgentOutput(
-                response=agent_response.get("response", ""),
+                response=agent_response_text,
                 next_stage=agent_response.get("next_stage", False),
                 current_stage=self.current_stage_name,
                 follow_up_count=agent_response.get("follow_up_count", 0)
@@ -158,7 +204,7 @@ class ConversationModel:
             await self.websocket_handler.send_next_stage(current_stage_data)
         else:
             output = webSocketAgentOutput(
-                response=agent_response.get("response", ""),
+                response=agent_response_text,
                 next_stage=agent_response.get("next_stage", False),
                 current_stage=self.current_stage_name,
                 follow_up_count=agent_response.get("follow_up_count", 0)
@@ -175,8 +221,13 @@ class ConversationModel:
         response = await self.call_agent(message)
 
         if response.get("success", False):
+            # Store agent response in chat history
+            agent_response_text = response.get("response", "")
+            if agent_response_text:
+                await self.add_to_chat_history("agent", agent_response_text)
+            
             output = webSocketAgentOutput(
-                response=response.get("response", ""),
+                response=agent_response_text,
                 next_stage=response.get("next_stage", False),
                 current_stage=self.current_stage_name,
                 follow_up_count=response.get("follow_up_count", 0)
@@ -192,6 +243,10 @@ class ConversationModel:
         await self.SST.start()
         await self.get_db_data(session_id)
         await self.websocket_handler.send_all_stages(self.stages)
+        
+        # Send chat history to frontend
+        chat_history = self.parse_chat_history()
+        await self.websocket_handler.send_chat_history(chat_history, self.current_stage_name)
 
         if self.is_new_project:
             await self.first_question_of_the_stage("Greet the user, introduce yourself, and initiate the conversation by asking them the next question in the current stage.")

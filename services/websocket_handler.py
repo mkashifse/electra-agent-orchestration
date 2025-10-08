@@ -100,3 +100,11 @@ class WebSocketHandler:
             "event": "user_transcription",
             "transcription": transcription
         }))
+
+    async def send_chat_history(self, chat_history: list, current_stage: str = None):
+        """Send chat history to frontend when session connects"""
+        await self.websocket.send_text(json.dumps({
+            "event": "chat_history",
+            "chat": chat_history,
+            "current_stage": current_stage
+        }))

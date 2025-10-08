@@ -13,6 +13,7 @@ class ChatMemory(Document):
     
     session_id: str = Field(..., description="Session identifier")
     messages: List[Dict[str, Any]] = Field(default_factory=list, description="Chat messages history")
+    chat_history: Dict[str, List[Dict[str, str]]] = Field(default_factory=dict, description="Clean chat history grouped by stage for frontend")
     current_stage_id: Optional[str] = Field(None, description="Current stage ID")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
