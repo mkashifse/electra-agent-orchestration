@@ -1,3 +1,7 @@
+"""
+Conversation model for handling the conversation flow.
+"""
+
 from fastapi import WebSocket
 from db.models.memory import ChatMemory
 from db.models.stage import Stage
@@ -137,13 +141,32 @@ class ConversationModel:
         await self.add_to_chat_history("user", message)
         await self.process_user_input(message)
 
-    async def process_message(self, message: WebSocketInput):
+    async def process_message(self, message: WebSocketInput) -> None:
+        """
+        Process incoming WebSocket messages (audio or text).
+        
+        This method handles both audio chunks for speech-to-text processing
+        and text prompts for direct conversation input.
+        
+        Args:
+            message: WebSocket message containing either audio_chunk or text_prompt
+        """
         if message.audio_chunk:
-            asyncio.create_task(self.SST.send_audio_chunk(message.audio_chunk))
+            # Process audio chunk for speech-to-text
+            try:
+                asyncio.create_task(self.SST.send_audio_chunk(message.audio_chunk))
+                logfire.debug("Audio chunk queued for STT processing")
+            except Exception as e:
+                logfire.error(f"Error processing audio chunk: {e}")
         elif message.text_prompt:
-            # Store user text input in chat history
-            await self.add_to_chat_history("user", message.text_prompt)
-            asyncio.create_task(self.process_user_input(message.text_prompt))
+            # Process text input directly
+            try:
+                # Store user text input in chat history
+                await self.add_to_chat_history("user", message.text_prompt)
+                asyncio.create_task(self.process_user_input(message.text_prompt))
+                logfire.debug(f"Text prompt queued for processing: {message.text_prompt[:50]}...")
+            except Exception as e:
+                logfire.error(f"Error processing text prompt: {e}")
 
     async def move_to_next_stage(self):
         if self.current_stage_index + 1 < len(self.stages):
@@ -239,25 +262,54 @@ class ConversationModel:
         await self.update_db_memory(response.get("messages", []))
 
 
-    async def run(self, session_id: str):
-        await self.SST.start()
-        await self.get_db_data(session_id)
-        await self.websocket_handler.send_all_stages(self.stages)
+    async def run(self, session_id: str) -> None:
+        """
+        Main conversation loop for handling WebSocket communication.
         
-        # Send chat history to frontend
-        chat_history = self.parse_chat_history()
-        await self.websocket_handler.send_chat_history(chat_history, self.current_stage_name)
-
-        if self.is_new_project:
-            await self.first_question_of_the_stage("Greet the user, introduce yourself, and initiate the conversation by asking them the next question in the current stage.")
-
-        await self.websocket_handler.send_flag(self.current_flag)
+        This method orchestrates the entire conversation flow including:
+        - STT service initialization
+        - Database data retrieval
+        - WebSocket message handling
+        - Proper cleanup on exit
+        
+        Args:
+            session_id: Unique identifier for the conversation session
+        """
         try:
+            # Initialize STT service
+            await self.SST.start()
+            logfire.info(f"STT service started for session: {session_id}")
+            
+            # Load session data
+            await self.get_db_data(session_id)
+            await self.websocket_handler.send_all_stages(self.stages)
+            
+            # Send chat history to frontend
+            chat_history = self.parse_chat_history()
+            await self.websocket_handler.send_chat_history(chat_history, self.current_stage_name)
+
+            # Initialize conversation if new project
+            if self.is_new_project:
+                await self.first_question_of_the_stage(
+                    "Greet the user, introduce yourself, and initiate the conversation by asking them the next question in the current stage."
+                )
+
+            # Start main message processing loop
+            await self.websocket_handler.send_flag(self.current_flag)
             async for message in self.websocket_handler.receive_messages():
                 if self.current_flag == Flag.LISTENING:
                     asyncio.create_task(self.process_message(message))
+                    
         except Exception as e:
-            logfire.info(f"WebSocket connection ended for session {session_id}: {e}")
+            logfire.error(f"Error in conversation loop for session {session_id}: {e}")
+            raise
+        finally:
+            # Clean up STT service
+            try:
+                await self.SST.finish()
+                logfire.info(f"STT service cleaned up for session: {session_id}")
+            except Exception as cleanup_error:
+                logfire.error(f"Error cleaning up STT service: {cleanup_error}")
 
 
     

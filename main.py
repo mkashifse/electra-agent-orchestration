@@ -15,6 +15,7 @@ from db.connection import init_db, close_db
 # Handlers
 # ================================================
 from handlers.conversation_handler import router as conversation_router
+from handlers.brd_handler import router as brd_router
 
 
 # ================================================
@@ -79,6 +80,7 @@ app.add_middleware(
 # Routers
 # ================================================
 app.include_router(conversation_router)
+app.include_router(brd_router)
 
 # ================================================
 # Root Endpoint

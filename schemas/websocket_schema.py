@@ -38,3 +38,21 @@ class WebSocketError(BaseModel):
     error: str
     message: str
     session_id: str
+
+
+# ================================================
+# BRD Generation Schemas
+# ================================================
+
+class BRDRequest(BaseModel):
+    """Request schema for BRD generation."""
+    session_id: str
+
+
+class BRDResponse(BaseModel):
+    """Response schema for BRD generation."""
+    success: bool
+    brd_content: Optional[str] = None  # Markdown BRD content
+    mermaid_diagram: Optional[str] = None  # Mermaid diagram code
+    message: str  # Status message or error description
+    session_id: str
