@@ -5,6 +5,7 @@ Application settings and configuration.
 # Application Settings
 # ================================================
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 from typing import Optional
 
 
@@ -13,6 +14,12 @@ from typing import Optional
 # ================================================
 class Settings(BaseSettings):
     """Application settings."""
+    
+    model_config = ConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"  # Ignore extra fields not defined in the model
+    )
     
     # Database
     DB_CONNECTION_STRING: str = "mongodb://localhost:27017"
@@ -32,10 +39,6 @@ class Settings(BaseSettings):
     
     # CORS
     ALLOWED_ORIGINS: list[str] = ["*"]
-    
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
 
 # ================================================
 # Settings Instance
